@@ -1,0 +1,19 @@
+{
+  "name": "daily-cloud-cost-report",
+  "version": "1.0.0",
+  "description": "Sends an email of resources costing over a threshold",
+  "main": "app.js",
+  "scripts": {
+    "compile": "tsc",
+    "test": ""
+  },
+  "dependencies": {
+    "esbuild": "^0.14.14"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.92",
+    "@types/node": "^18.11.4",
+    "prettier": "^2.5.1",
+    "typescript": "^4.8.4"
+  }
+}
