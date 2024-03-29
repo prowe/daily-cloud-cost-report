@@ -3,13 +3,16 @@
   "version": "1.0.0",
   "description": "Sends an email of resources costing over a threshold",
   "main": "app.js",
+  "type": "module",
   "scripts": {
     "compile": "tsc",
     "test": "vitest"
   },
   "dependencies": {
+    "@aws-sdk/client-cost-explorer": "^3.542.0",
     "esbuild": "^0.14.14",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "temporal-polyfill": "^0.2.3"
   },
   "devDependencies": {
     "@testing-library/react": "^14.2.2",
@@ -17,6 +20,7 @@
     "@types/node": "^18.11.4",
     "@types/react": "^18.2.73",
     "@types/react-dom": "^18.2.22",
+    "aws-sdk-client-mock": "^4.0.0",
     "happy-dom": "^14.3.9",
     "prettier": "^2.5.1",
     "typescript": "^4.8.4",
