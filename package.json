@@ -10,11 +10,13 @@
   },
   "dependencies": {
     "@aws-sdk/client-cost-explorer": "^3.542.0",
+    "@aws-sdk/client-sesv2": "^3.540.0",
     "esbuild": "^0.14.14",
     "react-dom": "^18.2.0",
     "temporal-polyfill": "^0.2.3"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.4.2",
     "@testing-library/react": "^14.2.2",
     "@types/aws-lambda": "^8.10.92",
     "@types/node": "^18.11.4",

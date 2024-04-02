@@ -3,6 +3,32 @@ Transform: AWS::Serverless-2016-10-31
 Description: "Runs a daily report for expensive resources"
   
 Resources:
+  DomainIdentity:
+    Type: AWS::SES::EmailIdentity
+    Properties:
+      EmailIdentity: 'sandbox-dev.sourceallies.com'
+
+  DomainValidationRecords:
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneId: 'Z328FCPUJ05W9K'
+      RecordSets:
+        - Name: !GetAtt DomainIdentity.DkimDNSTokenName1
+          Type: CNAME
+          TTL: 300
+          ResourceRecords:
+            - !GetAtt DomainIdentity.DkimDNSTokenValue1
+        - Name: !GetAtt DomainIdentity.DkimDNSTokenName2
+          Type: CNAME
+          TTL: 300
+          ResourceRecords:
+            - !GetAtt DomainIdentity.DkimDNSTokenValue2
+        - Name: !GetAtt DomainIdentity.DkimDNSTokenName3
+          Type: CNAME
+          TTL: 300
+          ResourceRecords:
+            - !GetAtt DomainIdentity.DkimDNSTokenValue3
+
   ReportFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -12,6 +38,20 @@ Resources:
       Runtime: nodejs18.x
       Architectures:
         - x86_64
+      Policies:
+        - Version: '2012-10-17' # Policy Document
+          Statement:
+            - Effect: Allow
+              Action:
+                - ses:SendEmail
+                - ce:GetCostAndUsageWithResources
+              Resource: '*'
+      Events:
+        NightlyEvent:
+          Type: ScheduleV2
+          Properties:
+            State: ENABLED
+            ScheduleExpression: 'cron(0 * * * ? *)'
     Metadata:
       BuildMethod: esbuild
       BuildProperties:

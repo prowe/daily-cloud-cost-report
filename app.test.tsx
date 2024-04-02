@@ -6,9 +6,21 @@ import {
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { mockClient } from "aws-sdk-client-mock";
 import { Temporal } from "temporal-polyfill";
+import { screen, render, within } from "@testing-library/react";
+import React from "react";
 import { lambdaHandler } from "./app";
+import {
+  SESv2Client,
+  SendEmailCommand,
+  SendEmailCommandInput,
+} from "@aws-sdk/client-sesv2";
 
 const mockCostExplorerClient = mockClient(CostExplorerClient);
+const mockSesClient = mockClient(SESv2Client);
+
+beforeEach(() => {
+  // vi.stubEnv()
+});
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -75,10 +87,12 @@ beforeEach(() => {
       },
     ],
   });
+  mockSesClient.on(SendEmailCommand).resolves({});
 });
 
 afterEach(() => {
   mockCostExplorerClient.reset();
+  mockSesClient.reset();
 });
 
 afterEach(() => {
@@ -93,7 +107,7 @@ it("should fetch the cost data from AWS", async () => {
   )[0].args;
   expect(costParams.input).toEqual<GetCostAndUsageWithResourcesCommandInput>({
     TimePeriod: {
-      Start: "2024-03-29T00:00:00Z",
+      Start: "2024-03-28T05:00:00Z",
       End: "2024-03-29T05:00:00Z",
     },
     Granularity: "DAILY",
@@ -108,6 +122,45 @@ it("should fetch the cost data from AWS", async () => {
   });
 });
 
-// it('should send an email with the cost data', async () => {
-//     await lambdaHandler();
-// });
+it("should send an email with the cost data", async () => {
+  await lambdaHandler();
+
+  const [sendEmailParams] =
+    mockSesClient.commandCalls(SendEmailCommand)[0].args;
+  expect(sendEmailParams.input).toMatchObject<SendEmailCommandInput>({
+    Destination: {
+      ToAddresses: ["prowe@sourceallies.com"],
+    },
+    FromEmailAddress: 'daily-cost@sandbox-dev.sourceallies.com',
+    Content: {
+      Simple: {
+        Subject: {
+          Data: "Cost and usage report",
+        },
+        Body: {
+          Html: {
+            Data: expect.any(String),
+          },
+        },
+      },
+    },
+  });
+});
+
+it("should send the data formatted as a table with a row for the resource", async () => {
+  await lambdaHandler();
+
+  const [sendEmailParams] =
+    mockSesClient.commandCalls(SendEmailCommand)[0].args;
+  const html = {
+    __html: sendEmailParams.input.Content?.Simple?.Body?.Html?.Data ?? "",
+  };
+  render(<div dangerouslySetInnerHTML={html} />);
+
+  const table = screen.getByRole("table");
+  const dynamoRowHeader = within(table).getByRole("rowheader", {
+    name: "arn:aws:dynamodb:us-east-1:144406111952:table/hack-my-rank-hacker-rank-details",
+  });
+  const dynamoRow = dynamoRowHeader.closest("tr")!;
+  expect(dynamoRow).toHaveTextContent("$0.000138154");
+});
