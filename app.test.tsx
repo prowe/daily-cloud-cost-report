@@ -5,7 +5,6 @@ import {
 } from "@aws-sdk/client-cost-explorer";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { mockClient } from "aws-sdk-client-mock";
-import { Temporal } from "temporal-polyfill";
 import { screen, render, within } from "@testing-library/react";
 import React from "react";
 import { lambdaHandler } from "./app";
@@ -29,14 +28,6 @@ beforeEach(() => {
 
 beforeEach(() => {
   mockCostExplorerClient.on(GetCostAndUsageWithResourcesCommand).resolves({
-    $metadata: {
-      httpStatusCode: 200,
-      requestId: "8073cb79-79ba-44b3-81e4-530ee819c265",
-      attempts: 1,
-      totalRetryDelay: 0,
-    },
-    DimensionValueAttributes: [],
-    GroupDefinitions: [{ Key: "RESOURCE_ID", Type: "DIMENSION" }],
     ResultsByTime: [
       {
         Estimated: true,
@@ -71,7 +62,7 @@ beforeEach(() => {
           },
           {
             Keys: [
-              "arn:aws:dynamodb:us-east-1:144406111952:table/hack-my-rank-hacker-rank-details",
+              "arn:aws:dynamodb:us-east-1:12345678910:table/widgets",
             ],
             Metrics: {
               BlendedCost: { Amount: "0.000138154", Unit: "USD" },
@@ -107,7 +98,7 @@ it("should fetch the cost data from AWS", async () => {
   )[0].args;
   expect(costParams.input).toEqual<GetCostAndUsageWithResourcesCommandInput>({
     TimePeriod: {
-      Start: "2024-03-28T05:00:00Z",
+      Start: "2024-03-27T05:00:00Z",
       End: "2024-03-29T05:00:00Z",
     },
     Granularity: "DAILY",
@@ -159,8 +150,8 @@ it("should send the data formatted as a table with a row for the resource", asyn
 
   const table = screen.getByRole("table");
   const dynamoRowHeader = within(table).getByRole("rowheader", {
-    name: "arn:aws:dynamodb:us-east-1:144406111952:table/hack-my-rank-hacker-rank-details",
+    name: "arn:aws:dynamodb:us-east-1:12345678910:table/widgets",
   });
   const dynamoRow = dynamoRowHeader.closest("tr")!;
-  expect(dynamoRow).toHaveTextContent("$0.000138154");
+  expect(within(dynamoRow).getByText("$0.000138154")).not.toBeNull();
 });

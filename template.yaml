@@ -39,7 +39,7 @@ Resources:
       Architectures:
         - x86_64
       Policies:
-        - Version: '2012-10-17' # Policy Document
+        - Version: '2012-10-17'
           Statement:
             - Effect: Allow
               Action:
@@ -51,7 +51,7 @@ Resources:
           Type: ScheduleV2
           Properties:
             State: ENABLED
-            ScheduleExpression: 'cron(0 * * * ? *)'
+            ScheduleExpression: 'cron(0 7 * * ? *)'
     Metadata:
       BuildMethod: esbuild
       BuildProperties:

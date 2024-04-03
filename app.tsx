@@ -15,7 +15,7 @@ async function getCosts(): Promise<Group[]> {
     new GetCostAndUsageWithResourcesCommand({
       Filter: undefined,
       TimePeriod: {
-        Start: now.startOfDay().add({ days: -1 }).toInstant().toJSON(),
+        Start: now.startOfDay().add({ days: -2 }).toInstant().toJSON(),
         End: now.startOfDay().toInstant().toJSON(),
       },
       Granularity: "DAILY",
@@ -51,39 +51,28 @@ export default function CostReport({ costs }: { costs: Group[] }) {
       ...group,
       blendedAmount: parseFloat(group.Metrics?.["BlendedCost"]?.Amount ?? "0"),
     }))
-    .sort((a, b) => b.blendedAmount - a.blendedAmount)
-    .slice(0, 20);
+    .slice(0, 10)
+    .sort((a, b) => b.blendedAmount - a.blendedAmount);
 
   return (
-    <html>
-      <head>
-        <style>
-          {`
-            th {
-              text-align: left;
-            }
-          `}
-        </style>
-      </head>
-      <body>
-        <table>
-          <thead>
-            <tr>
-              <th>Resource</th>
-              <th>Blended Cost</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedCosts.map((group, idx) => (
-              <tr key={idx}>
-                <th scope="row">{group.Keys?.join("/")}</th>
-                <BlendedCostCell group={group} />
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </body>
-    </html>
+    <table>
+      <thead>
+        <tr>
+          <th>Resource</th>
+          <th>Blended Cost</th>
+        </tr>
+      </thead>
+      <tbody>
+        {sortedCosts.map((group, idx) => (
+          <tr key={idx}>
+            <th scope="row" style={{ textAlign: "left" }}>
+              {group.Keys?.join("/")}
+            </th>
+            <BlendedCostCell group={group} />
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 
@@ -116,3 +105,4 @@ export const lambdaHandler = async (): Promise<any> => {
   const html = renderToStaticMarkup(<CostReport costs={costs} />);
   await sendEmail(html);
 };
+
