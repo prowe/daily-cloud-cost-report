@@ -61,11 +61,9 @@ beforeEach(() => {
             },
           },
           {
-            Keys: [
-              "arn:aws:dynamodb:us-east-1:12345678910:table/widgets",
-            ],
+            Keys: ["arn:aws:dynamodb:us-east-1:12345678910:table/widgets"],
             Metrics: {
-              BlendedCost: { Amount: "0.000138154", Unit: "USD" },
+              BlendedCost: { Amount: "1.000138154", Unit: "USD" },
               UsageQuantity: { Amount: "4", Unit: "N/A" },
             },
           },
@@ -122,7 +120,7 @@ it("should send an email with the cost data", async () => {
     Destination: {
       ToAddresses: ["prowe@sourceallies.com"],
     },
-    FromEmailAddress: 'daily-cost@sandbox-dev.sourceallies.com',
+    FromEmailAddress: "daily-cost@sandbox-dev.sourceallies.com",
     Content: {
       Simple: {
         Subject: {
@@ -153,5 +151,32 @@ it("should send the data formatted as a table with a row for the resource", asyn
     name: "arn:aws:dynamodb:us-east-1:12345678910:table/widgets",
   });
   const dynamoRow = dynamoRowHeader.closest("tr")!;
-  expect(within(dynamoRow).getByText("$0.000138154")).not.toBeNull();
+  expect(within(dynamoRow).getByText("$1.000138154")).not.toBeNull();
+});
+
+it("should not send an email if the max cost is less than $1.00", async () => {
+  mockCostExplorerClient.reset();
+  mockCostExplorerClient.on(GetCostAndUsageWithResourcesCommand).resolves({
+    ResultsByTime: [
+      {
+        Estimated: true,
+        Groups: [
+          {
+            Keys: [
+              "arn:aws:connect:::phone-number/9c64c0e4-1521-4dde-912d-782de332eb73",
+            ],
+            Metrics: {
+              BlendedCost: { Amount: "0.000559064", Unit: "USD" },
+              UsageQuantity: { Amount: "0.04166667", Unit: "N/A" },
+            },
+          },
+        ],
+        Total: {},
+      },
+    ],
+  });
+
+  await lambdaHandler();
+
+  expect(mockSesClient.calls()).toEqual([]);
 });

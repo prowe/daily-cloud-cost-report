@@ -8,7 +8,11 @@ import {
 } from "@aws-sdk/client-cost-explorer";
 import React from "react";
 
-async function getCosts(): Promise<Group[]> {
+type ParsedCostGroup = Group & {
+  blendedAmount?: number;
+};
+
+async function getCosts(): Promise<ParsedCostGroup[]> {
   const costExplorerClient = new CostExplorerClient();
   const now = Temporal.Now.zonedDateTimeISO("America/Chicago");
   const result = await costExplorerClient.send(
@@ -28,7 +32,16 @@ async function getCosts(): Promise<Group[]> {
       Metrics: ["BlendedCost", "UsageQuantity"],
     })
   );
-  return result.ResultsByTime?.flatMap((r) => r.Groups ?? []) ?? [];
+  return (result.ResultsByTime ?? [])
+    .flatMap((r) => r.Groups ?? [])
+    .map((group) => {
+      const blendedCost = group.Metrics?.["BlendedCost"]?.Amount;
+      return {
+        ...group,
+        blendedAmount:
+          blendedCost === undefined ? undefined : parseFloat(blendedCost),
+      };
+    });
 }
 
 function BlendedCostCell({ group }: { group: Group }) {
@@ -45,14 +58,10 @@ function BlendedCostCell({ group }: { group: Group }) {
   );
 }
 
-export default function CostReport({ costs }: { costs: Group[] }) {
+export default function CostReport({ costs }: { costs: ParsedCostGroup[] }) {
   const sortedCosts = [...costs]
-    .map((group) => ({
-      ...group,
-      blendedAmount: parseFloat(group.Metrics?.["BlendedCost"]?.Amount ?? "0"),
-    }))
     .slice(0, 10)
-    .sort((a, b) => b.blendedAmount - a.blendedAmount);
+    .sort((a, b) => (b.blendedAmount ?? 0) - (a.blendedAmount ?? 0));
 
   return (
     <table>
@@ -102,7 +111,9 @@ async function sendEmail(html: string) {
 
 export const lambdaHandler = async (): Promise<any> => {
   const costs = await getCosts();
+  if (!costs.find((group) => group.blendedAmount && group.blendedAmount >= 1)) {
+    return;
+  }
   const html = renderToStaticMarkup(<CostReport costs={costs} />);
   await sendEmail(html);
 };
-
