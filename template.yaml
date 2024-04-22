@@ -8,6 +8,11 @@ Resources:
     Properties:
       EmailIdentity: 'sandbox-dev.sourceallies.com'
 
+  UserIdentity:
+    Type: AWS::SES::EmailIdentity
+    Properties:
+      EmailIdentity: 'prowe@sourceallies.com'
+
   DomainValidationRecords:
     Type: AWS::Route53::RecordSetGroup
     Properties:
